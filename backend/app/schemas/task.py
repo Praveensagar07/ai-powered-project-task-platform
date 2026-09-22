@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-TaskStatus = Literal["todo", "in_progress", "in-progress", "done"]
+TaskStatus = Literal["todo", "in_progress", "done"]
 TaskPriority = Literal["low", "medium", "high", "critical"]
 
 

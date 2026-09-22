@@ -131,16 +131,34 @@ def upgrade() -> None:
         if "ix_tasks_due_date" not in task_indexes:
             op.create_index("ix_tasks_due_date", "tasks", ["due_date"])
 
-        # Normalize any Week 3 task statuses from 'in-progress' to 'in_progress'
-        op.execute("UPDATE tasks SET status = 'in_progress' WHERE status = 'in-progress'")
-
-        # Update check constraints on PostgreSQL
+        # STEP 1: Remove and replace OLD check constraint on PostgreSQL BEFORE updating existing task rows
+        # This prevents psycopg.errors.CheckViolation when updating 'in-progress' -> 'in_progress'
         if bind.dialect.name == "postgresql":
             op.execute("ALTER TABLE tasks DROP CONSTRAINT IF EXISTS check_task_status")
+            # Install transitional constraint allowing both 'in_progress' and 'in-progress'
             op.execute(
                 "ALTER TABLE tasks ADD CONSTRAINT check_task_status "
                 "CHECK (status IN ('todo', 'in_progress', 'in-progress', 'done'))"
             )
+
+        # STEP 2: Now that constraint allows 'in_progress', normalize existing task rows
+        op.execute("UPDATE tasks SET status = 'in_progress' WHERE status = 'in-progress'")
+
+        # STEP 3: Tighten to final application statuses ('todo', 'in_progress', 'done')
+        if bind.dialect.name == "postgresql":
+            op.execute("ALTER TABLE tasks DROP CONSTRAINT IF EXISTS check_task_status")
+            op.execute(
+                "ALTER TABLE tasks ADD CONSTRAINT check_task_status "
+                "CHECK (status IN ('todo', 'in_progress', 'done'))"
+            )
+
+        # STEP 4: Verify no invalid task statuses remain
+        invalid_count = bind.execute(
+            sa.text("SELECT COUNT(*) FROM tasks WHERE status NOT IN ('todo', 'in_progress', 'done')")
+        ).scalar()
+        if invalid_count and invalid_count > 0:
+            raise ValueError(f"Migration error: found {invalid_count} tasks with invalid status after normalization")
+
 
     # ----------------------------------------------------
     # 4. Create activities table if not present

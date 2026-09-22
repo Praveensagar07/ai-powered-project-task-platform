@@ -103,7 +103,10 @@ def test_week3_to_week4_migration_preserves_data():
                 text(
                     """
                     INSERT INTO tasks (id, title, description, project_id, assignee_id, status, priority, due_date, created_at, updated_at)
-                    VALUES ('task_vpc_setup', 'Setup VPC Peering', 'Connect clusters', 'proj_cloud_migration', 'usr_alex_rivera', 'in-progress', 'critical', :now, :now, :now);
+                    VALUES 
+                    ('task_vpc_setup', 'Setup VPC Peering', 'Connect clusters', 'proj_cloud_migration', 'usr_alex_rivera', 'in-progress', 'critical', :now, :now, :now),
+                    ('task_db_replica', 'Setup Read Replica', 'Configure replica', 'proj_cloud_migration', 'usr_alex_rivera', 'todo', 'high', :now, :now, :now),
+                    ('task_iam_roles', 'Setup IAM Roles', 'Configure roles', 'proj_cloud_migration', 'usr_alex_rivera', 'done', 'medium', :now, :now, :now);
                     """
                 ),
                 {"now": now_iso},
@@ -186,6 +189,18 @@ def test_week3_to_week4_migration_preserves_data():
             assert task.status == "in_progress"
             assert task.tags == "feature"
             assert task.estimated_hours == 4.0
+
+            # Verify existing todo and done tasks were preserved
+            task_todo = session.query(Task).filter(Task.id == "task_db_replica").first()
+            assert task_todo is not None and task_todo.status == "todo"
+
+            task_done = session.query(Task).filter(Task.id == "task_iam_roles").first()
+            assert task_done is not None and task_done.status == "done"
+
+            # Verify all tasks in DB have valid statuses
+            all_tasks = session.query(Task).all()
+            assert len(all_tasks) == 3
+            assert all(t.status in ("todo", "in_progress", "done") for t in all_tasks)
 
             # 5. Verify Week 4 models can insert new activity log
             activity = Activity(
