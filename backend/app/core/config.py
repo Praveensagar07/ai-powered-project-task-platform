@@ -3,6 +3,7 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from sqlalchemy.engine import make_url
 
 
 def _load_env_file(dotenv_path: Path) -> None:
@@ -28,6 +29,46 @@ _load_env_file(_root_env)
 _load_env_file(_backend_env)
 
 
+def normalize_database_url(raw_url: str | None) -> str:
+    """Normalize and validate the database connection string.
+
+    Supports:
+    - None -> defaults to 'sqlite:///./app_data.db' for local zero-config runs.
+    - Stripping accidental leading/trailing whitespace and enclosing quotes.
+    - postgres://... -> postgresql+psycopg://...
+    - postgresql://... -> postgresql+psycopg://...
+    - postgresql+psycopg://... -> unchanged
+    - sqlite://... -> unchanged
+
+    Raises ValueError('Invalid DATABASE_URL configuration') if malformed or unsupported,
+    without printing raw credentials.
+    """
+    if raw_url is None:
+        return "sqlite:///./app_data.db"
+
+    # Safely strip whitespace and enclosing single/double quotes
+    cleaned = raw_url.strip().strip("'\"").strip()
+    if not cleaned:
+        raise ValueError("Invalid DATABASE_URL configuration")
+
+    # Normalize PostgreSQL schemes to psycopg v3 dialect
+    if cleaned.startswith("postgres://"):
+        cleaned = "postgresql+psycopg://" + cleaned[len("postgres://"):]
+    elif cleaned.startswith("postgresql://"):
+        cleaned = "postgresql+psycopg://" + cleaned[len("postgresql://"):]
+
+    # Safely validate with SQLAlchemy make_url without exposing credentials in exceptions
+    try:
+        parsed = make_url(cleaned)
+        driver = (parsed.drivername or "").lower()
+        if not (driver.startswith("sqlite") or driver.startswith("postgresql")):
+            raise ValueError("Invalid DATABASE_URL configuration")
+    except Exception:
+        raise ValueError("Invalid DATABASE_URL configuration") from None
+
+    return cleaned
+
+
 class Settings:
     """Application settings resolved from environment variables."""
 
@@ -40,11 +81,10 @@ class Settings:
         self.host: str = os.getenv("HOST", "0.0.0.0")
         self.port: int = int(os.getenv("PORT", "8000"))
 
-        # Database connection string
-        raw_db_url = os.getenv("DATABASE_URL", "sqlite:///./app_data.db")
-        if raw_db_url.startswith("postgresql://"):
-            raw_db_url = raw_db_url.replace("postgresql://", "postgresql+psycopg://", 1)
-        self.database_url: str = raw_db_url
+        # Database connection string with robust normalization
+        raw_db_url = os.getenv("DATABASE_URL")
+        self.database_url: str = normalize_database_url(raw_db_url)
+
 
         # Database pool settings
         self.db_pool_size: int = int(os.getenv("DB_POOL_SIZE", "10"))
