@@ -35,7 +35,7 @@ SEED_DEMO_DATA=false
 
 ### Build & Start Commands
 - **Root Directory:** `backend`
-- **Build Command:** `pip install -r requirements.txt`
+- **Build Command:** `pip install -r requirements.txt && alembic upgrade head`
 - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
 ---
@@ -44,8 +44,10 @@ SEED_DEMO_DATA=false
 
 ### Environment Variables
 ```env
-VITE_API_BASE_URL=https://your-backend-service.onrender.com/api
+VITE_API_URL=https://your-backend-service.onrender.com
 ```
+*(Both `https://your-backend-service.onrender.com` and `https://your-backend-service.onrender.com/api` are automatically parsed without double-slash errors).*
+
 
 ### Build & Output Settings
 - **Root Directory:** `frontend`

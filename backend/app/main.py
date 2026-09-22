@@ -99,7 +99,8 @@ def root_info() -> dict[str, str]:
         "environment": settings.app_env,
         "docs": "/docs",
         "redoc": "/redoc",
-        "api": settings.api_prefix,
+        "api": "/api",
+        "api_v1": "/api/v1",
     }
 
 
@@ -117,5 +118,9 @@ def health_check() -> dict[str, str]:
     }
 
 
-# 5. Include API routes
-app.include_router(api_router, prefix=settings.api_prefix)
+# 5. Include API routes under both /api and /api/v1 for version compatibility
+app.include_router(api_router, prefix="/api")
+app.include_router(api_router, prefix="/api/v1")
+if settings.api_prefix not in ("/api", "/api/v1"):
+    app.include_router(api_router, prefix=settings.api_prefix)
+

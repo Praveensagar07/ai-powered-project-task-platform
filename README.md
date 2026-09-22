@@ -193,16 +193,23 @@ cp .env.example .env
 ```
 *(Default settings run immediately on local SQLite with intelligent AI heuristics without requiring third-party API keys).*
 
-### 3. Start Backend
+### 3. Run Alembic Database Migrations
 ```bash
 cd backend
 pip install -r requirements.txt
+alembic upgrade head
+```
+*(Applies all relational schemas, indices, and constraints to SQLite or PostgreSQL).*
+
+### 4. Start Backend
+```bash
 python -m uvicorn app.main:app --reload --port 8000
 ```
 - API Root: `http://localhost:8000`
 - Interactive OpenAPI Docs: `http://localhost:8000/docs`
+- Version Compatibility: Both `/api` and `/api/v1` routes supported identically
 
-### 4. Start Frontend (in a new terminal)
+### 5. Start Frontend (in a new terminal)
 ```bash
 cd frontend
 npm install
@@ -210,28 +217,36 @@ npm run dev
 ```
 - Application URL: `http://localhost:5173`
 
-### 5. Demo Credentials
+### 6. Demo Credentials
 Click **"Fill Demo Credentials"** on the login screen, or sign in manually:
 - **Email:** `praveen@example.com`
 - **Password:** `Password123!`
 
 ---
 
-## Running Automated Tests
+## Running Automated Tests & Verification
 
 ### Backend Test Suite (Pytest)
 ```bash
 cd backend
-python -m pytest
+python -m pytest -q
 ```
-*Executes 30 automated integration and unit tests covering authentication, password hashing, ownership checks, project & task CRUD, batch tasks, filtering, dashboard aggregation, and AI generation.*
+*Executes 44 automated integration and unit tests covering authentication, password hashing, ownership checks, project & task CRUD, batch tasks, filtering, dashboard aggregation, AI generation, and dual API prefix compatibility (`/api` & `/api/v1`).*
 
-### Frontend Type Check & Build
+### 24-Step Local End-to-End Verification
+```bash
+cd backend
+python ./scripts/verify_e2e.py
+```
+*Executes full 24-step automated verification: Register → Login → Dashboard → Project CRUD → Dual Prefix Check → AI Task Generation → Interactive Review & Commit → Manual Tasks → Status Updates (`in_progress`, `done`) → AI Summary → Filtering → Dashboard Metrics → Activity Audit Feed → Delete Task → Logout → 401 Rejections → Re-login.*
+
+### Frontend Type Check & Production Build
 ```bash
 cd frontend
 npm run build
 ```
-*Verifies 100% clean TypeScript typing with zero errors and outputs production distribution bundle.*
+*Verifies 100% clean TypeScript typing with zero errors and outputs production distribution bundle in Vite.*
+
 
 ---
 

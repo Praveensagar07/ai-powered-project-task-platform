@@ -2,8 +2,21 @@
  * Centralized API client module.
  * Automatically injects Bearer authorization token and parses responses/errors.
  */
+function getBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '').trim();
+  if (!envUrl) {
+    return '/api';
+  }
+  // Strip trailing slashes
+  const cleanUrl = envUrl.replace(/\/+$/, '');
+  // If cleanUrl already ends with /api or /api/v1, use it directly; otherwise append /api
+  if (cleanUrl.endsWith('/api') || cleanUrl.endsWith('/api/v1')) {
+    return cleanUrl;
+  }
+  return `${cleanUrl}/api`;
+}
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = getBaseUrl();
 
 export class ApiError extends Error {
   status: number;
