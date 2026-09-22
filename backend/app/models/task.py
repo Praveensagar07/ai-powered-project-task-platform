@@ -24,7 +24,7 @@ class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('todo', 'in_progress', 'done')",
+            "status IN ('todo', 'in_progress', 'in-progress', 'done')",
             name="check_task_status",
         ),
         CheckConstraint(

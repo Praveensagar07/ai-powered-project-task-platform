@@ -24,7 +24,7 @@ class Project(Base):
     __tablename__ = "projects"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('planning', 'active', 'completed', 'on_hold')",
+            "status IN ('planning', 'active', 'completed', 'archived', 'on_hold')",
             name="check_project_status",
         ),
         CheckConstraint(

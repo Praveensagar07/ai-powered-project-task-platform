@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-ProjectStatus = Literal["planning", "active", "completed", "on_hold"]
+ProjectStatus = Literal["planning", "active", "completed", "on_hold", "archived"]
 ProjectPriority = Literal["low", "medium", "high", "critical"]
 
 
